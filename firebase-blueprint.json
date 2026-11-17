@@ -1,0 +1,231 @@
+{
+  "entities": {
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized administrator or teacher account",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "minLength": 3, "maxLength": 200 },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "role": { "type": "string", "enum": ["super_admin", "teacher_admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "displayName", "role", "createdAt"]
+    },
+    "AdminInvite": {
+      "title": "AdminInvite",
+      "description": "Email allowlist entry for delegated teacher admins",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "minLength": 3, "maxLength": 200 },
+        "addedByUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "addedByUid", "createdAt"]
+    },
+    "QuizPublic": {
+      "title": "QuizPublic",
+      "description": "Published or draft quiz specification without plaintext answer keys",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "subject": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "instructions": { "type": "string", "maxLength": 5000 },
+        "classTargets": { "type": "array" },
+        "status": { "type": "string", "enum": ["draft", "published", "archived"] },
+        "startAt": { "type": "string", "minLength": 10, "maxLength": 40 },
+        "endAt": { "type": "string", "minLength": 10, "maxLength": 40 },
+        "durationMinutes": { "type": "number" },
+        "shuffleQuestions": { "type": "boolean" },
+        "requireFullscreen": { "type": "boolean" },
+        "maxViolations": { "type": "number" },
+        "questions": { "type": "array" },
+        "totalMaxScore": { "type": "number" },
+        "questionCount": { "type": "number" },
+        "sealedKeyPack": { "type": "string", "minLength": 10, "maxLength": 250000 },
+        "createdByUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "title",
+        "subject",
+        "classTargets",
+        "status",
+        "startAt",
+        "endAt",
+        "durationMinutes",
+        "shuffleQuestions",
+        "requireFullscreen",
+        "maxViolations",
+        "questions",
+        "totalMaxScore",
+        "questionCount",
+        "sealedKeyPack",
+        "createdByUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "QuizKeyBundle": {
+      "title": "QuizKeyBundle",
+      "description": "Admin-only plaintext answer keys and essay rubrics",
+      "type": "object",
+      "properties": {
+        "quizId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "keys": { "type": "array" },
+        "updatedByUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["quizId", "keys", "updatedByUid", "updatedAt"]
+    },
+    "QuestionBankItem": {
+      "title": "QuestionBankItem",
+      "description": "Reusable question item in the admin bank",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "subject": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "type": { "type": "string", "enum": ["mcq", "complex_mcq", "grouping", "short_essay", "long_essay"] },
+        "tags": { "type": "array" },
+        "questionData": { "type": "object" },
+        "createdByUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "subject", "type", "tags", "questionData", "createdByUid", "createdAt", "updatedAt"]
+    },
+    "ParticipantRecord": {
+      "title": "ParticipantRecord",
+      "description": "Registered student participant directory entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "nis": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "className": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "nis", "name", "className", "active", "createdAt", "updatedAt"]
+    },
+    "QuizAttempt": {
+      "title": "QuizAttempt",
+      "description": "Student examination attempt with autosaved responses and server receipt",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "quizId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "quizTitle": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "studentName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "nis": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "className": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "status": { "type": "string", "enum": ["in_progress", "submitted", "graded"] },
+        "startedAt": { "type": "string", "minLength": 10, "maxLength": 40 },
+        "expiresAt": { "type": "string", "minLength": 10, "maxLength": 40 },
+        "submittedAt": { "type": "string", "maxLength": 40 },
+        "autoSubmitted": { "type": "boolean" },
+        "answers": { "type": "object" },
+        "flaggedQuestions": { "type": "array" },
+        "currentQuestionIndex": { "type": "number" },
+        "violationCount": { "type": "number" },
+        "violationsSummary": { "type": "array" },
+        "objectiveScore": { "type": "number" },
+        "maxObjectiveScore": { "type": "number" },
+        "manualScore": { "type": "number" },
+        "maxManualScore": { "type": "number" },
+        "totalScore": { "type": "number" },
+        "maxScore": { "type": "number" },
+        "itemResults": { "type": "object" },
+        "manualFeedback": { "type": "object" },
+        "serverReceipt": { "type": "string", "maxLength": 512 },
+        "sessionNonce": { "type": "string", "minLength": 8, "maxLength": 128 },
+        "gradedByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "quizId",
+        "quizTitle",
+        "studentName",
+        "nis",
+        "className",
+        "status",
+        "startedAt",
+        "expiresAt",
+        "autoSubmitted",
+        "answers",
+        "flaggedQuestions",
+        "currentQuestionIndex",
+        "violationCount",
+        "violationsSummary",
+        "objectiveScore",
+        "maxObjectiveScore",
+        "manualScore",
+        "maxManualScore",
+        "totalScore",
+        "maxScore",
+        "itemResults",
+        "manualFeedback",
+        "serverReceipt",
+        "sessionNonce",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ViolationEvent": {
+      "title": "ViolationEvent",
+      "description": "Granular proctoring and focus violation record",
+      "type": "object",
+      "properties": {
+        "attemptId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "quizId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "type": { "type": "string", "enum": ["fullscreen_exit", "tab_switch", "window_blur", "copy_attempt", "paste_attempt", "context_menu", "shortcut_blocked", "resize_split_warning"] },
+        "detail": { "type": "string", "maxLength": 500 },
+        "clientTimestamp": { "type": "string", "minLength": 10, "maxLength": 40 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["attemptId", "quizId", "type", "detail", "clientTimestamp", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/admins/{uid}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Verified administrator accounts"
+    },
+    "/adminInvites/{inviteId}": {
+      "schema": { "$ref": "#/entities/AdminInvite" },
+      "description": "Delegated admin invite allowlist"
+    },
+    "/quizzes/{quizId}": {
+      "schema": { "$ref": "#/entities/QuizPublic" },
+      "description": "Quiz metadata and sanitized questions with AES-256-GCM sealed key pack"
+    },
+    "/quizKeys/{quizId}": {
+      "schema": { "$ref": "#/entities/QuizKeyBundle" },
+      "description": "Admin-only plaintext answer keys and rubrics"
+    },
+    "/questionBank/{questionId}": {
+      "schema": { "$ref": "#/entities/QuestionBankItem" },
+      "description": "Reusable admin question bank items"
+    },
+    "/participants/{participantId}": {
+      "schema": { "$ref": "#/entities/ParticipantRecord" },
+      "description": "Registered student roster managed by admin"
+    },
+    "/attempts/{attemptId}": {
+      "schema": { "$ref": "#/entities/QuizAttempt" },
+      "description": "Student exam attempts with server-signed receipts"
+    },
+    "/attempts/{attemptId}/violations/{violationId}": {
+      "schema": { "$ref": "#/entities/ViolationEvent" },
+      "description": "Proctoring security events tied to an active exam attempt"
+    }
+  }
+}

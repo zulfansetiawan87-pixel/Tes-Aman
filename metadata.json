@@ -1,0 +1,6 @@
+{
+  "name": "SECURE QUIZ",
+  "description": "Platform ujian digital aman berbasis PWA dengan proctoring web, bank soal multimodal Bahasa Inggris, impor DOCX/PDF, dan arsitektur Android Lock Task Mode.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

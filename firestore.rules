@@ -1,0 +1,347 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'zulfansetiawan87@guru.smk.belajar.id';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidAdminUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'createdAt']) &&
+        isValidId(data.uid) &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120 &&
+        data.role in ['super_admin', 'teacher_admin'] &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidAdminInvite(data) {
+      return data.keys().hasAll(['email', 'addedByUid', 'createdAt']) &&
+        data.keys().hasOnly(['email', 'addedByUid', 'createdAt']) &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        isValidId(data.addedByUid) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidQuiz(data) {
+      return data.keys().hasAll([
+          'id', 'title', 'subject', 'classTargets', 'status', 'startAt', 'endAt',
+          'durationMinutes', 'shuffleQuestions', 'requireFullscreen', 'maxViolations',
+          'questions', 'totalMaxScore', 'questionCount', 'sealedKeyPack',
+          'createdByUid', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'title', 'subject', 'description', 'instructions', 'classTargets',
+          'status', 'startAt', 'endAt', 'durationMinutes', 'shuffleQuestions',
+          'requireFullscreen', 'maxViolations', 'questions', 'totalMaxScore',
+          'questionCount', 'sealedKeyPack', 'createdByUid', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 100 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
+        (!('instructions' in data) || (data.instructions is string && data.instructions.size() <= 5000)) &&
+        data.classTargets is list && data.classTargets.size() >= 1 && data.classTargets.size() <= 30 &&
+        data.classTargets[0] is string &&
+        data.status in ['draft', 'published', 'archived'] &&
+        data.startAt is string && data.startAt.size() >= 10 && data.startAt.size() <= 40 &&
+        data.endAt is string && data.endAt.size() >= 10 && data.endAt.size() <= 40 &&
+        data.durationMinutes is number && data.durationMinutes >= 1 && data.durationMinutes <= 360 &&
+        data.shuffleQuestions is bool &&
+        data.requireFullscreen is bool &&
+        data.maxViolations is number && data.maxViolations >= 0 && data.maxViolations <= 50 &&
+        data.questions is list && data.questions.size() >= 1 && data.questions.size() <= 200 &&
+        data.questions[0] is map &&
+        data.totalMaxScore is number && data.totalMaxScore >= 0 && data.totalMaxScore <= 10000 &&
+        data.questionCount is number && data.questionCount >= 1 && data.questionCount <= 200 &&
+        data.sealedKeyPack is string && data.sealedKeyPack.size() >= 10 && data.sealedKeyPack.size() <= 250000 &&
+        isValidId(data.createdByUid) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidQuizKeys(data) {
+      return data.keys().hasAll(['quizId', 'keys', 'updatedByUid', 'updatedAt']) &&
+        data.keys().hasOnly(['quizId', 'keys', 'updatedByUid', 'updatedAt']) &&
+        isValidId(data.quizId) &&
+        data.keys is list && data.keys.size() >= 1 && data.keys.size() <= 200 &&
+        data.keys[0] is map &&
+        isValidId(data.updatedByUid) &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidQuestionBankItem(data) {
+      return data.keys().hasAll(['id', 'subject', 'type', 'tags', 'questionData', 'createdByUid', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'subject', 'type', 'tags', 'questionData', 'createdByUid', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 100 &&
+        data.type in ['mcq', 'complex_mcq', 'grouping', 'short_essay', 'long_essay'] &&
+        data.tags is list && data.tags.size() <= 10 &&
+        data.questionData is map &&
+        isValidId(data.createdByUid) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidParticipant(data) {
+      return data.keys().hasAll(['id', 'nis', 'name', 'className', 'active', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'nis', 'name', 'className', 'active', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        data.nis is string && data.nis.size() >= 1 && data.nis.size() <= 40 &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+        data.className is string && data.className.size() >= 1 && data.className.size() <= 60 &&
+        data.active is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAttempt(data) {
+      return data.keys().hasAll([
+          'id', 'quizId', 'quizTitle', 'studentName', 'nis', 'className', 'status',
+          'startedAt', 'expiresAt', 'autoSubmitted', 'answers', 'flaggedQuestions',
+          'currentQuestionIndex', 'violationCount', 'violationsSummary',
+          'objectiveScore', 'maxObjectiveScore', 'manualScore', 'maxManualScore',
+          'totalScore', 'maxScore', 'itemResults', 'manualFeedback',
+          'serverReceipt', 'sessionNonce', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'quizId', 'quizTitle', 'studentName', 'nis', 'className', 'status',
+          'startedAt', 'expiresAt', 'submittedAt', 'autoSubmitted', 'answers',
+          'flaggedQuestions', 'currentQuestionIndex', 'violationCount',
+          'violationsSummary', 'objectiveScore', 'maxObjectiveScore', 'manualScore',
+          'maxManualScore', 'totalScore', 'maxScore', 'itemResults',
+          'manualFeedback', 'serverReceipt', 'sessionNonce', 'gradedByUid',
+          'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        isValidId(data.quizId) &&
+        data.quizTitle is string && data.quizTitle.size() >= 1 && data.quizTitle.size() <= 200 &&
+        data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 120 &&
+        data.nis is string && data.nis.size() >= 1 && data.nis.size() <= 40 &&
+        data.className is string && data.className.size() >= 1 && data.className.size() <= 60 &&
+        data.status in ['in_progress', 'submitted', 'graded'] &&
+        data.startedAt is string && data.startedAt.size() >= 10 && data.startedAt.size() <= 40 &&
+        data.expiresAt is string && data.expiresAt.size() >= 10 && data.expiresAt.size() <= 40 &&
+        (!('submittedAt' in data) || (data.submittedAt is string && data.submittedAt.size() <= 40)) &&
+        data.autoSubmitted is bool &&
+        data.answers is map &&
+        data.flaggedQuestions is list && data.flaggedQuestions.size() <= 200 &&
+        data.currentQuestionIndex is number && data.currentQuestionIndex >= 0 && data.currentQuestionIndex <= 200 &&
+        data.violationCount is number && data.violationCount >= 0 && data.violationCount <= 200 &&
+        data.violationsSummary is list && data.violationsSummary.size() <= 100 &&
+        data.objectiveScore is number && data.objectiveScore >= 0 && data.objectiveScore <= 10000 &&
+        data.maxObjectiveScore is number && data.maxObjectiveScore >= 0 && data.maxObjectiveScore <= 10000 &&
+        data.manualScore is number && data.manualScore >= 0 && data.manualScore <= 10000 &&
+        data.maxManualScore is number && data.maxManualScore >= 0 && data.maxManualScore <= 10000 &&
+        data.totalScore is number && data.totalScore >= 0 && data.totalScore <= 10000 &&
+        data.maxScore is number && data.maxScore >= 0 && data.maxScore <= 10000 &&
+        data.itemResults is map &&
+        data.manualFeedback is map &&
+        data.serverReceipt is string && data.serverReceipt.size() <= 512 &&
+        data.sessionNonce is string && data.sessionNonce.size() >= 8 && data.sessionNonce.size() <= 128 &&
+        (!('gradedByUid' in data) || isValidId(data.gradedByUid)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidViolation(data) {
+      return data.keys().hasAll(['attemptId', 'quizId', 'type', 'detail', 'clientTimestamp', 'createdAt']) &&
+        data.keys().hasOnly(['attemptId', 'quizId', 'type', 'detail', 'clientTimestamp', 'createdAt']) &&
+        isValidId(data.attemptId) &&
+        isValidId(data.quizId) &&
+        data.type in [
+          'fullscreen_exit', 'tab_switch', 'window_blur', 'copy_attempt',
+          'paste_attempt', 'context_menu', 'shortcut_blocked', 'resize_split_warning'
+        ] &&
+        data.detail is string && data.detail.size() <= 500 &&
+        data.clientTimestamp is string && data.clientTimestamp.size() >= 10 && data.clientTimestamp.size() <= 40 &&
+        data.createdAt is timestamp;
+    }
+
+    // Connection probe document
+    match /test/connection {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
+    // Admins
+    match /admins/{uid} {
+      allow get: if isAdmin() || (isVerifiedUser() && request.auth.uid == uid);
+      allow list: if isAdmin();
+      allow create: if isValidId(uid) && isValidAdminUser(incoming()) && (
+        isBootstrappedAdmin() ||
+        (isVerifiedUser() && request.auth.uid == uid && incoming().uid == uid &&
+          incoming().email == request.auth.token.email &&
+          incoming().role == 'teacher_admin' &&
+          exists(/databases/$(database)/documents/adminInvites/$(request.auth.token.email)))
+      ) && incoming().createdAt == request.time;
+      allow update: if isValidId(uid) && isAdmin() && isValidAdminUser(incoming()) &&
+        incoming().uid == existing().uid && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(uid) && isBootstrappedAdmin();
+    }
+
+    match /adminInvites/{inviteId} {
+      allow get: if isAdmin() || (isVerifiedUser() && request.auth.token.email == inviteId);
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidAdminInvite(incoming()) &&
+        incoming().addedByUid == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    // Quizzes (public metadata + sanitized questions + AES-256-GCM encrypted key pack)
+    match /quizzes/{quizId} {
+      allow get: if isValidId(quizId) && (isAdmin() || (resource != null && existing().status == 'published'));
+      allow list: if isAdmin() || resource.data.status == 'published';
+      allow create: if isValidId(quizId) && isAdmin() && isValidQuiz(incoming()) &&
+        incoming().id == quizId &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(quizId) && isAdmin() && isValidQuiz(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time;
+      allow delete: if isValidId(quizId) && isAdmin();
+    }
+
+    // Quiz answer keys (strictly Admin only)
+    match /quizKeys/{quizId} {
+      allow get: if isValidId(quizId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(quizId) && isAdmin() && isValidQuizKeys(incoming()) &&
+        incoming().quizId == quizId &&
+        incoming().updatedByUid == request.auth.uid &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(quizId) && isAdmin() && isValidQuizKeys(incoming()) &&
+        incoming().quizId == existing().quizId &&
+        incoming().updatedByUid == request.auth.uid &&
+        incoming().updatedAt == request.time;
+      allow delete: if isValidId(quizId) && isAdmin();
+    }
+
+    // Reusable Question Bank (Admin only)
+    match /questionBank/{questionId} {
+      allow get: if isValidId(questionId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(questionId) && isAdmin() && isValidQuestionBankItem(incoming()) &&
+        incoming().id == questionId &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(questionId) && isAdmin() && isValidQuestionBankItem(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time;
+      allow delete: if isValidId(questionId) && isAdmin();
+    }
+
+    // Student Roster / Participants (Admin only)
+    match /participants/{participantId} {
+      allow get: if isValidId(participantId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(participantId) && isAdmin() && isValidParticipant(incoming()) &&
+        incoming().id == participantId &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(participantId) && isAdmin() && isValidParticipant(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time;
+      allow delete: if isValidId(participantId) && isAdmin();
+    }
+
+    // Student Quiz Attempts
+    match /attempts/{attemptId} {
+      allow get: if isValidId(attemptId) && (isAdmin() || attemptId.size() >= 24);
+      allow list: if isAdmin();
+      allow create: if isValidId(attemptId) && isValidAttempt(incoming()) &&
+        incoming().id == attemptId &&
+        incoming().status == 'in_progress' &&
+        incoming().objectiveScore == 0 &&
+        incoming().manualScore == 0 &&
+        incoming().totalScore == 0 &&
+        incoming().serverReceipt == '' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/quizzes/$(incoming().quizId)) &&
+        get(/databases/$(database)/documents/quizzes/$(incoming().quizId)).data.status == 'published';
+
+      allow update: if isValidId(attemptId) && isValidAttempt(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().quizId == existing().quizId &&
+        incoming().nis == existing().nis &&
+        incoming().studentName == existing().studentName &&
+        incoming().className == existing().className &&
+        incoming().sessionNonce == existing().sessionNonce &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly([
+            'status', 'manualScore', 'totalScore', 'itemResults', 'manualFeedback', 'gradedByUid', 'updatedAt'
+          ])) ||
+          (existing().status == 'in_progress' && incoming().status == 'in_progress' &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'answers', 'flaggedQuestions', 'currentQuestionIndex', 'violationCount', 'violationsSummary', 'updatedAt'
+            ])) ||
+          (existing().status == 'in_progress' && incoming().status == 'submitted' &&
+            incoming().serverReceipt.size() >= 16 &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'answers', 'flaggedQuestions', 'currentQuestionIndex', 'violationCount',
+              'violationsSummary', 'status', 'submittedAt', 'autoSubmitted',
+              'objectiveScore', 'maxObjectiveScore', 'totalScore', 'maxScore',
+              'itemResults', 'serverReceipt', 'updatedAt'
+            ]))
+        );
+
+      allow delete: if isValidId(attemptId) && isAdmin();
+
+      match /violations/{violationId} {
+        allow get: if isValidId(attemptId) && isValidId(violationId) && isAdmin();
+        allow list: if isAdmin();
+        allow create: if isValidId(attemptId) && isValidId(violationId) &&
+          isValidViolation(incoming()) &&
+          incoming().attemptId == attemptId &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/attempts/$(attemptId)) &&
+          get(/databases/$(database)/documents/attempts/$(attemptId)).data.status == 'in_progress';
+        allow update: if false;
+        allow delete: if isValidId(attemptId) && isValidId(violationId) && isAdmin();
+      }
+    }
+  }
+}
