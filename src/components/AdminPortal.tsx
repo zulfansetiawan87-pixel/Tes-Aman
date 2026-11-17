@@ -284,6 +284,13 @@ export const AdminPortal: React.FC = () => {
     try {
       await signInWithPopup(auth, googleAuthProvider);
     } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code === 'auth/unauthorized-domain') {
+        setAuthError(
+          `Domain "${window.location.hostname}" belum diizinkan di Firebase Authentication. Tambahkan domain ini di Firebase Console → Authentication → Settings → Authorized domains.`
+        );
+        return;
+      }
       setAuthError(err instanceof Error ? err.message : 'Login Google dibatalkan atau gagal.');
     }
   };

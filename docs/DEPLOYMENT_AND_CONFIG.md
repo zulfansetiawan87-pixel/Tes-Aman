@@ -82,3 +82,31 @@ firebase deploy --only firestore:rules
 ## 7. Transparansi Batasan Keamanan Web
 - **Web/PWA**: Mampu mengaktifkan Fullscreen API, memblokir seleksi teks/copy/paste/klik kanan/pintasan DevTools, mendeteksi perpindahan tab (`visibilitychange`) dan kehilangan fokus (`blur`), mendeteksi penyusutan viewport (indikasi split-screen), serta memvalidasi waktu & nilai di server.
 - **Keterbatasan Browser**: Aplikasi web standar tidak dapat mencegah tangkapan layar sistem operasi, pintasan hardware (Power + Volume), atau penguncian tombol sistem tanpa aplikasi native Android Device Owner.
+
+---
+
+## 8. Deployment ke Vercel (`*.vercel.app`)
+Aplikasi ini sudah dikonfigurasi untuk berjalan di Vercel menggunakan `vercel.json` dan Serverless Function `api/index.ts` (yang membungkus seluruh endpoint Express dari `src/server/app.ts`).
+
+### File Konfigurasi Vercel
+- `vercel.json`: Mengatur build Vite (`dist/`), routing `/api/*` ke `api/index.ts`, fallback SPA ke `/index.html` (tanpa menimpa aset statis maupun `sw.js`/`manifest.webmanifest`), dan header PWA/keamanan.
+- `api/index.ts`: Entrypoint Serverless Function untuk seluruh endpoint API (`/api/health`, `/api/admin/*`, `/api/student/*`, `/api/import/*`).
+
+### Langkah Deployment
+1. **Tambahkan Environment Variables di Vercel Dashboard** (*Project Settings → Environment Variables*):
+   - `QUIZ_SEAL_SECRET`: String acak minimal 32 karakter.
+   - `SESSION_SECRET`: String acak minimal 32 karakter.
+   - (Opsional) `GEMINI_API_KEY` jika mengaktifkan fitur Gemini di masa depan.
+2. **Deploy via Vercel CLI atau GitHub**:
+   - Via GitHub: Hubungkan repositori ke Vercel → Framework Preset otomatis terdeteksi **Vite**, Build Command `npm run build`, Output Directory `dist`.
+   - Via CLI:
+     ```bash
+     npm i -g vercel
+     vercel --prod
+     ```
+3. **Wajib: Daftarkan Domain Vercel di Firebase Authentication**:
+   - Buka **Firebase Console** (proyek `gen-lang-client-0734775840`) → **Authentication → Settings → Authorized domains → Add domain**.
+   - Masukkan domain deploy Anda, misalnya `nama-aplikasi.vercel.app` (dan domain preview jika digunakan). Tanpa langkah ini, Login Google Guru/Admin akan ditolak dengan kode `auth/unauthorized-domain`.
+4. **Catatan Batas Ukuran Upload di Vercel**:
+   - Serverless Function Vercel memiliki batas payload HTTP standar **4.5 MB**; pastikan dokumen impor `.docx`/`.pdf` berukuran di bawah 4.5 MB saat diunggah melalui versi Vercel.
+
