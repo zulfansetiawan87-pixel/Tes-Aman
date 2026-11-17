@@ -30,6 +30,7 @@ import {
 import {
   auth,
   BOOTSTRAPPED_ADMIN_EMAIL,
+  FIREBASE_PROJECT_ID,
   googleAuthProvider,
 } from '../lib/firebase.ts';
 import {
@@ -55,6 +56,7 @@ import {
   exportResultsToExcel,
   exportResultsToPdf,
 } from '../lib/exportReports.ts';
+import { downloadQuizImportTemplateDocx } from '../lib/docxTemplateClient.ts';
 import type {
   FullQuestion,
   ParsedImportQuestion,
@@ -108,6 +110,8 @@ export const AdminPortal: React.FC = () => {
   const [authReady, setAuthReady] = useState(false);
   const [isAdminAuthorized, setIsAdminAuthorized] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [unauthorizedDomainHost, setUnauthorizedDomainHost] = useState<string | null>(null);
+  const [copiedDomain, setCopiedDomain] = useState(false);
 
   const [activeTab, setActiveTab] = useState<AdminTab>('quizzes');
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -143,6 +147,7 @@ export const AdminPortal: React.FC = () => {
   const [savingQuiz, setSavingQuiz] = useState(false);
   const [showBankPicker, setShowBankPicker] = useState(false);
   const [cloudSyncState, setCloudSyncState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [cloudSyncError, setCloudSyncError] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [unsyncedLocalDraft, setUnsyncedLocalDraft] = useState<{
     quizId: string;
@@ -281,13 +286,17 @@ export const AdminPortal: React.FC = () => {
 
   const handleGoogleSignIn = async () => {
     setAuthError(null);
+    setUnauthorizedDomainHost(null);
+    setCopiedDomain(false);
     try {
       await signInWithPopup(auth, googleAuthProvider);
     } catch (err) {
       const code = (err as { code?: string })?.code;
       if (code === 'auth/unauthorized-domain') {
+        const host = window.location.hostname;
+        setUnauthorizedDomainHost(host);
         setAuthError(
-          `Domain "${window.location.hostname}" belum diizinkan di Firebase Authentication. Tambahkan domain ini di Firebase Console → Authentication → Settings → Authorized domains.`
+          `Domain "${host}" belum diizinkan di Firebase Authentication. Tambahkan domain ini di Firebase Console → Authentication → Settings → Authorized domains.`
         );
         return;
       }
@@ -479,6 +488,7 @@ export const AdminPortal: React.FC = () => {
         isNewQuizRef.current = false;
         setIsNewQuiz(false);
         lastSavedSignatureRef.current = signature;
+        setCloudSyncError(null);
         setCloudSyncState('saved');
         setLastSyncedAt(new Date().toLocaleTimeString('id-ID'));
         try {
@@ -489,8 +499,9 @@ export const AdminPortal: React.FC = () => {
         } catch {
           // ignore
         }
-      } catch {
+      } catch (err) {
         setCloudSyncState('error');
+        setCloudSyncError(err instanceof Error ? err.message : 'Gagal menyinkronkan ke server.');
       } finally {
         autosaveInFlightRef.current = false;
       }
@@ -876,8 +887,43 @@ export const AdminPortal: React.FC = () => {
           </p>
 
           {authError && (
-            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-800">
-              {authError}
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-900 space-y-3">
+              <p className="leading-relaxed font-medium">{authError}</p>
+              {unauthorizedDomainHost && (
+                <div className="rounded-lg border border-red-200 bg-white p-3 space-y-2.5 text-slate-700">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <code className="rounded bg-slate-100 px-2 py-1 font-mono text-xs font-semibold text-slate-900">
+                      {unauthorizedDomainHost}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void navigator.clipboard?.writeText(unauthorizedDomainHost).then(() => {
+                          setCopiedDomain(true);
+                          window.setTimeout(() => setCopiedDomain(false), 2500);
+                        });
+                      }}
+                      className="rounded-lg border border-slate-300 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-800 hover:bg-slate-100 cursor-pointer"
+                    >
+                      {copiedDomain ? 'Tersalin' : 'Salin Domain'}
+                    </button>
+                  </div>
+                  <ol className="list-decimal pl-4 space-y-1 text-[11px] text-slate-600">
+                    <li>Buka Pengaturan Autentikasi Firebase proyek ini.</li>
+                    <li>Pilih tab <strong>Authorized domains</strong> lalu klik <strong>Add domain</strong>.</li>
+                    <li>Tempel <span className="font-mono font-semibold text-slate-800">{unauthorizedDomainHost}</span> lalu simpan.</li>
+                    <li>Kembali ke halaman ini dan klik <strong>Masuk dengan Google</strong> lagi.</li>
+                  </ol>
+                  <a
+                    href={`https://console.firebase.google.com/project/${FIREBASE_PROJECT_ID}/authentication/settings`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-[36px] w-full items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+                  >
+                    Buka Firebase Authorized Domains
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
@@ -1406,7 +1452,7 @@ export const AdminPortal: React.FC = () => {
                         : cloudSyncState === 'saved'
                         ? `Tersimpan otomatis di Cloud Firestore (${lastSyncedAt || 'baru saja'})`
                         : cloudSyncState === 'error'
-                        ? 'Gagal sinkron ke Cloud — cadangan lokal aman di browser ini.'
+                        ? `Gagal sinkron ke Cloud (${cloudSyncError || 'server tidak merespons'}) — cadangan lokal aman di browser ini.`
                         : 'Setiap perubahan soal otomatis disinkronkan setiap 2 detik.'}
                     </span>
                     <div className="flex flex-wrap items-center gap-2.5">
@@ -1606,13 +1652,22 @@ export const AdminPortal: React.FC = () => {
                       Unduh template resmi DOCX untuk hasil parsing terbaik (5 tipe soal + teks/gambar/audio multimodal).
                     </p>
                   </div>
-                  <a
-                    href="/api/import/template.docx"
-                    className="inline-flex min-h-[42px] items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 text-xs font-semibold text-blue-700 hover:bg-blue-100 shrink-0"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void downloadQuizImportTemplateDocx()
+                        .then(() => {
+                          showMessage('ok', 'Template_Impor_Soal_SecureQuiz.docx berhasil diunduh.');
+                        })
+                        .catch(() => {
+                          showMessage('err', 'Gagal membuat file template DOCX.');
+                        });
+                    }}
+                    className="inline-flex min-h-[42px] items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 text-xs font-semibold text-blue-700 hover:bg-blue-100 shrink-0 cursor-pointer"
                   >
                     <Download className="h-4 w-4" />
                     <span>Unduh Template .DOCX</span>
-                  </a>
+                  </button>
                 </div>
 
                 <label className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center hover:border-blue-500 hover:bg-blue-50/40 transition-colors cursor-pointer">

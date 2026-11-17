@@ -105,8 +105,8 @@ Aplikasi ini sudah dikonfigurasi untuk berjalan di Vercel menggunakan `vercel.js
      vercel --prod
      ```
 3. **Wajib: Daftarkan Domain Vercel di Firebase Authentication**:
-   - Buka **Firebase Console** (proyek `gen-lang-client-0734775840`) → **Authentication → Settings → Authorized domains → Add domain**.
-   - Masukkan domain deploy Anda, misalnya `nama-aplikasi.vercel.app` (dan domain preview jika digunakan). Tanpa langkah ini, Login Google Guru/Admin akan ditolak dengan kode `auth/unauthorized-domain`.
+   - Buka langsung [Firebase Authentication Settings (`gen-lang-client-0734775840`)](https://console.firebase.google.com/project/gen-lang-client-0734775840/authentication/settings) → tab **Authorized domains → Add domain**.
+   - Masukkan domain deploy Anda, misalnya `tes-aman.vercel.app` (dan domain preview jika digunakan), lalu klik **Add**. Tanpa langkah ini, Login Google Guru/Admin akan ditolak dengan kode `auth/unauthorized-domain`.
 4. **Catatan Batas Ukuran Upload di Vercel**:
    - Serverless Function Vercel memiliki batas payload HTTP standar **4.5 MB**; pastikan dokumen impor `.docx`/`.pdf` berukuran di bawah 4.5 MB saat diunggah melalui versi Vercel.
 

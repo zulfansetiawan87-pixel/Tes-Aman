@@ -180,7 +180,9 @@ export async function saveQuizWithSealedKeys(params: {
 
   if (!sealRes.ok) {
     const errBody = await sealRes.json().catch(() => ({}));
-    throw new Error(errBody.error || 'Gagal menyegel kunci jawaban di server.');
+    throw new Error(
+      errBody.error || `Gagal menyegel kunci jawaban di server (HTTP ${sealRes.status}).`
+    );
   }
   const { sealedKeyPack } = (await sealRes.json()) as { sealedKeyPack: string };
 

@@ -6,7 +6,7 @@ import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import multer from 'multer';
 import { z } from 'zod';
-import firebaseConfig from '../../firebase-applet-config.json' with { type: 'json' };
+import { getFirebaseAppletConfig } from './firebaseConfig.ts';
 import {
   decryptKeyPack,
   encryptKeyPack,
@@ -36,6 +36,7 @@ interface AuthedRequest extends express.Request {
 }
 
 function getFirebaseAdminAuth() {
+  const firebaseConfig = getFirebaseAppletConfig();
   if (!getApps().length) {
     initializeApp({ projectId: firebaseConfig.projectId });
   }
@@ -66,6 +67,7 @@ async function verifyAdminAuth(
     let authorized = emailLower === BOOTSTRAPPED_ADMIN_EMAIL;
 
     if (!authorized) {
+      const firebaseConfig = getFirebaseAppletConfig();
       // Check Firestore /admins/{uid} via REST using the caller's own ID token
       const adminDocUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(
         firebaseConfig.projectId

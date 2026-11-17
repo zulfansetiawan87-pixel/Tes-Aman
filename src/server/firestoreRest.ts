@@ -1,4 +1,4 @@
-import firebaseConfig from '../../firebase-applet-config.json' with { type: 'json' };
+import { getFirebaseAppletConfig } from './firebaseConfig.ts';
 import type { QuizDocument } from '../types/quiz.ts';
 
 interface FirestoreValue {
@@ -38,6 +38,7 @@ export async function fetchPublishedQuizFromFirestore(quizId: string): Promise<Q
     return null;
   }
 
+  const firebaseConfig = getFirebaseAppletConfig();
   const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(
     firebaseConfig.projectId
   )}/databases/${encodeURIComponent(

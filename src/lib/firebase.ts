@@ -10,6 +10,7 @@ export const googleAuthProvider = new GoogleAuthProvider();
 googleAuthProvider.setCustomParameters({ prompt: 'select_account' });
 
 export const BOOTSTRAPPED_ADMIN_EMAIL = 'zulfansetiawan87@guru.smk.belajar.id';
+export const FIREBASE_PROJECT_ID = firebaseConfig.projectId;
 
 export type FirestoreOperationType =
   | 'create'

@@ -1,11 +1,12 @@
 import crypto from 'node:crypto';
-import firebaseConfig from '../../firebase-applet-config.json' with { type: 'json' };
+import { getFirebaseAppletConfig } from './firebaseConfig.ts';
 
 function deriveKey(purpose: string, envVarName: string): Buffer {
   const configured = process.env[envVarName];
   if (configured && configured.length >= 16) {
     return crypto.createHash('sha256').update(`${purpose}:${configured}`).digest();
   }
+  const firebaseConfig = getFirebaseAppletConfig();
   // Deterministic fallback bound to the provisioned Firebase project & database ID
   // so sealed key-packs survive server restarts in managed previews.
   const seed = `${purpose}:${firebaseConfig.projectId}:${firebaseConfig.firestoreDatabaseId}:${firebaseConfig.appId}`;

@@ -4,7 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/index.ts": {
+    "api/index.mjs": {
       "maxDuration": 30,
       "memory": 1024,
       "includeFiles": "firebase-applet-config.json"
@@ -54,7 +54,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.ts"
+      "destination": "/api/index"
     },
     {
       "source": "/((?!api/|assets/|src/assets/|sw\\.js|workbox-.*\\.js|manifest\\.webmanifest|.*\\.[a-zA-Z0-9]+$).*)",

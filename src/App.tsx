@@ -13,6 +13,7 @@ import { AdminPortal } from './components/AdminPortal.tsx';
 import { NativeArchitectureView } from './components/NativeArchitectureView.tsx';
 import { OfflineIndicator, PWAInstallButton } from './components/PWAInstallButton.tsx';
 import { StudentPortal } from './components/StudentPortal.tsx';
+import { downloadQuizImportTemplateDocx } from './lib/docxTemplateClient.ts';
 import { testFirestoreConnection } from './lib/firebase.ts';
 
 type AppRoute = 'home' | 'student' | 'admin' | 'native';
@@ -297,12 +298,13 @@ export default function App() {
             >
               Arsitektur Android Lock Task Mode
             </button>
-            <a
-              href="/api/import/template.docx"
-              className="hover:text-slate-900"
+            <button
+              type="button"
+              onClick={() => void downloadQuizImportTemplateDocx()}
+              className="hover:text-slate-900 cursor-pointer"
             >
               Template Impor DOCX
-            </a>
+            </button>
           </div>
         </div>
       </footer>
